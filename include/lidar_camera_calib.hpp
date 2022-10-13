@@ -159,15 +159,15 @@ public:
   // 存储LiDAR Depth/Intensity图像边缘点的2D点云
   pcl::PointCloud<pcl::PointXYZ>::Ptr lidar_edge_cloud_;
 };
-
+// C++ constructor, read image file and PCD file, both extract the edge feature.
 Calibration::Calibration(const std::string &image_file,
                          const std::string &pcd_file,
                          const std::string &calib_config_file) {
-
+   // load the configuration file (depends on indoor or outdoor environment)
   loadCalibConfig(calib_config_file);
-
+   // Ccv::imread function loads the image using the file path specified by the first argument, IMREAD_UNCHANGED loads the image as is.
   image_ = cv::imread(image_file, cv::IMREAD_UNCHANGED);
-  if (!image_.data) {
+  if (!image_.data) { //
     std::string msg = "Can not load image from " + image_file;
     ROS_ERROR_STREAM(msg.c_str());
     exit(-1);
@@ -181,7 +181,7 @@ Calibration::Calibration(const std::string &image_file,
   if (image_.type() == CV_8UC1) {
     grey_image_ = image_;
   } else if (image_.type() == CV_8UC3) {
-    cv::cvtColor(image_, grey_image_, cv::COLOR_BGR2GRAY);
+    cv::cvtColor(image_, grey_image_, cv::COLOR_BGR2GRAY); //Convert the image to grayscale (using the function cv::cvtColor ):
   } else {
     std::string msg = "Unsupported image type, please use CV_8UC3 or CV_8UC1";
     ROS_ERROR_STREAM(msg.c_str());
@@ -355,15 +355,16 @@ void Calibration::edgeDetector(
     const cv::Mat &src_img, cv::Mat &edge_img,
     pcl::PointCloud<pcl::PointXYZ>::Ptr &edge_cloud) {
   int gaussian_size = 5;
-  cv::GaussianBlur(src_img, src_img, cv::Size(gaussian_size, gaussian_size), 0,
-                   0);
+  cv::Mat blur_img = cv::Mat::zeros(height_,width_, CV_8UC1);
+  cv::GaussianBlur(src_img, blur_img, cv::Size(gaussian_size, gaussian_size), 0,
+                   0); // Gaussian blur/smoothing is the most commonly used technique to eliminate noises in images and videos.
   cv::Mat canny_result = cv::Mat::zeros(height_, width_, CV_8UC1);
-  cv::Canny(src_img, canny_result, canny_threshold, canny_threshold * 3, 3,
-            true);
+  cv::Canny(blur_img, canny_result, canny_threshold, canny_threshold * 3, 3,
+            true);  // Implement the Canny Edge Detector
   std::vector<std::vector<cv::Point>> contours;
   std::vector<cv::Vec4i> hierarchy;
   cv::findContours(canny_result, contours, hierarchy, cv::RETR_EXTERNAL,
-                   cv::CHAIN_APPROX_NONE, cv::Point(0, 0));
+                   cv::CHAIN_APPROX_NONE, cv::Point(0, 0)); //https://blog.csdn.net/guduruyu/article/details/69220296
   edge_img = cv::Mat::zeros(height_, width_, CV_8UC1);
 
   edge_cloud =
